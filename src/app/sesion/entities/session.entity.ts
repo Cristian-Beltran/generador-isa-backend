@@ -16,10 +16,10 @@ export class Session {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Patient, { eager: true })
+  @ManyToOne(() => Patient, { eager: true, nullable: false })
   patient: Patient;
 
-  @ManyToOne(() => Device, { eager: true })
+  @ManyToOne(() => Device, { eager: true, nullable: false })
   device: Device;
 
   @CreateDateColumn()
@@ -28,6 +28,14 @@ export class Session {
   @Column({ type: 'timestamp', nullable: true })
   endedAt?: Date;
 
-  @OneToMany(() => SessionData, (data) => data.session, { cascade: true })
+  /** Duración planificada de la sesión en segundos (1, 5 o 10 min => 60, 300, 600) */
+  @Column({ type: 'int' })
+  durationSeconds: number;
+
+  /** Corriente objetivo en mA (float, simple) */
+  @Column('float')
+  targetCurrent_mA: number;
+
+  @OneToMany(() => SessionData, (d) => d.session, { cascade: true })
   records: SessionData[];
 }

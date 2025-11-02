@@ -7,7 +7,6 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-
 @Entity('doctors')
 export class Doctor {
   @PrimaryGeneratedColumn('uuid')
