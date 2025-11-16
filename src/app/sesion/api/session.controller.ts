@@ -2,7 +2,7 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { SessionService } from '../services/session.service';
 import { CreateSessionDto } from '../dtos/create-session.dto';
-import { AppendTelemetryDto } from '../dtos/append-telemetry.dto';
+import { SessionDataDto } from '../dtos/append-telemetry.dto';
 
 @Controller('sessions')
 export class SessionController {
@@ -14,7 +14,7 @@ export class SessionController {
   }
 
   @Post(':id/data')
-  appendData(@Param('id') sessionId: string, @Body() dto: AppendTelemetryDto) {
+  appendData(@Param('id') sessionId: string, @Body() dto: SessionDataDto) {
     return this.service.appendData(sessionId, dto);
   }
 

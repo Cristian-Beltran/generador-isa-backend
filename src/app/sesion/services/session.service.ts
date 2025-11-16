@@ -11,7 +11,7 @@ import { SessionData } from '../entities/session-data.entity';
 import { Device } from '../../device/entities/device.entity';
 import { Patient } from '../../users/entities/patient.entity';
 import { CreateSessionDto } from '../dtos/create-session.dto';
-import { AppendTelemetryDto } from '../dtos/append-telemetry.dto';
+import { SessionDataDto } from '../dtos/append-telemetry.dto';
 
 @Injectable()
 export class SessionService {
@@ -27,16 +27,15 @@ export class SessionService {
 
   // POST /sessions
   async createSession(dto: CreateSessionDto) {
-    const [patient, device] = await Promise.all([
-      this.patientRepo.findOne({ where: { id: dto.patientId } }),
-      this.deviceRepo.findOne({ where: { serialNumber: dto.deviceSerial } }),
-    ]);
-    if (!patient) throw new NotFoundException('Patient no encontrado');
+    const device = await this.deviceRepo.findOne({
+      where: { serialNumber: dto.deviceSerial },
+      relations: ['patient'],
+    });
     if (!device) throw new NotFoundException('Device no encontrado');
 
     const session = this.sessionRepo.create({
-      patient,
       device,
+      patient: device.patient,
       durationSeconds: dto.durationSeconds,
       targetCurrent_mA: dto.targetCurrent_mA,
     });
@@ -44,7 +43,7 @@ export class SessionService {
 
     return {
       id: saved.id,
-      patientId: patient.id,
+      patientId: device.patient.id,
       deviceId: device.id,
       deviceSerial: dto.deviceSerial,
       startedAt: saved.startedAt,
@@ -55,26 +54,19 @@ export class SessionService {
   }
 
   // POST /sessions/:id/data
-  async appendData(sessionId: string, dto: AppendTelemetryDto) {
+  async appendData(sessionId: string, dto: SessionDataDto) {
     const session = await this.sessionRepo.findOne({
       where: { id: sessionId },
       relations: ['patient', 'device'],
     });
     if (!session) throw new NotFoundException('Session no encontrada');
 
-    const rows = dto.data?.length ? dto.data : [];
-    if (!rows.length) throw new BadRequestException('data vacío');
-
-    const entities = rows.map((r) =>
-      this.dataRepo.create({
-        session,
-        measuredCurrent_mA: r.measuredCurrent_mA,
-        temperature_C: r.temperature_C,
-      }),
-    );
-    await this.dataRepo.save(entities);
-
-    return { sessionId, inserted: entities.length };
+    const data = this.dataRepo.create({
+      session,
+      measuredCurrent_mA: dto.measuredCurrent_mA,
+      temperature_C: dto.temperature_C,
+    });
+    await this.dataRepo.save(data);
   }
 
   // POST /sessions/:id/close
@@ -93,7 +85,7 @@ export class SessionService {
   async findOne(id: string) {
     const session = await this.sessionRepo.findOne({
       where: { id },
-      relations: ['patient', 'device', 'records'],
+      relations: ['device', 'records'],
     });
     if (!session) throw new NotFoundException('Session no encontrada');
     return session;
@@ -103,9 +95,9 @@ export class SessionService {
   async list({ patientId }: { patientId?: string }) {
     if (patientId) {
       return this.sessionRepo.find({
-        where: { patient: { id: patientId } },
+        where: { patient: { user: { id: patientId } } },
         order: { startedAt: 'DESC' },
-        relations: ['patient', 'device'],
+        relations: ['device', 'records'],
       });
     }
     return this.sessionRepo.find({

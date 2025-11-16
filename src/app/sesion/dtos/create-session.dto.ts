@@ -2,9 +2,6 @@
 import { IsInt, IsOptional, IsString, IsUUID, IsNumber } from 'class-validator';
 
 export class CreateSessionDto {
-  @IsUUID()
-  patientId: string;
-
   @IsString()
   deviceSerial: string;
 

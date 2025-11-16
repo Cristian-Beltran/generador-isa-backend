@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, Not, Repository } from 'typeorm';
 import { Device } from '../entities/device.entity';
 import {
   LinkDevicePatientDto,
@@ -38,7 +38,10 @@ export class DeviceService {
   }
 
   findAll(): Promise<Device[]> {
-    return this.deviceRepo.find({ relations: ['patient', 'patient.user'] });
+    return this.deviceRepo.find({
+      where: { status: Not(Status.DELETED) },
+      relations: ['patient', 'patient.user'],
+    });
   }
 
   async findOne(id: string): Promise<Device> {
@@ -56,6 +59,10 @@ export class DeviceService {
 
     if (dto.serialNumber !== undefined) device.serialNumber = dto.serialNumber;
     if (dto.model !== undefined) device.model = dto.model;
+    if (dto.patientId) {
+      const patient = await this.patientService.findOneOrThrow(dto.patientId);
+      device.patient = patient;
+    }
 
     await this.deviceRepo.save(device);
     return this.findOne(id);

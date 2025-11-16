@@ -1,18 +1,10 @@
 // src/app/session/dtos/append-telemetry.dto.ts
-import { IsArray, ValidateNested, IsNumber } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsNumber } from 'class-validator';
 
-class TelemetryRowDto {
+export class SessionDataDto {
   @IsNumber()
   measuredCurrent_mA: number;
 
   @IsNumber()
   temperature_C: number;
-}
-
-export class AppendTelemetryDto {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => TelemetryRowDto)
-  data: TelemetryRowDto[];
 }
